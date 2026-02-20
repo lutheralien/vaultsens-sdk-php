@@ -49,15 +49,24 @@ Upload a single file.
 ```php
 $result = $client->uploadFile(
     './photo.png',
-    'my-image',       // optional display name
-    'medium',         // optional: 'none' | 'low' | 'medium' | 'high'
-    'folder-id'       // optional folder to place the file in
+    'my-image',   // optional display name stored with the file
+    'medium',     // optional compression level applied server-side
+    'folder-id'   // optional folder to place the file in
 );
 ```
 
+**Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$filePath` | `string` | Path to the file on disk |
+| `$name` | `string\|null` | Display name stored with the file |
+| `$compression` | `string\|null` | Server-side compression: `'none'` \| `'low'` \| `'medium'` \| `'high'`. Must be allowed by your plan |
+| `$folderId` | `string\|null` | ID of the folder to place the file in. Omit for root |
+
 #### `uploadFiles(array $filePaths, $name = null, $compression = null, $folderId = null)`
 
-Upload multiple files in one request.
+Upload multiple files in one request. Accepts the same parameters as `uploadFile`.
 
 ```php
 $result = $client->uploadFiles(
@@ -86,7 +95,7 @@ $meta = $client->getFileMetadata('file-id');
 
 #### `updateFile($fileId, $filePath, $name = null, $compression = null)`
 
-Replace a file's content.
+Replace a file's content. Accepts `$name` and `$compression` — `$folderId` is not supported (file stays in its current folder).
 
 ```php
 $client->updateFile('file-id', './new-photo.png', null, 'high');
@@ -100,7 +109,7 @@ $client->deleteFile('file-id');
 
 #### `buildFileUrl($fileId, array $options = [])`
 
-Build a URL for dynamic image transforms.
+Build a URL for dynamic image transforms. No network request is made.
 
 ```php
 $url = $client->buildFileUrl('file-id', [
@@ -110,6 +119,15 @@ $url = $client->buildFileUrl('file-id', [
     'quality' => 80,
 ]);
 ```
+
+**Transform options**
+
+| Key | Type | Description |
+|---|---|---|
+| `width` | `int?` | Output width in pixels |
+| `height` | `int?` | Output height in pixels (fit: inside, aspect ratio preserved) |
+| `format` | `string?` | Output format e.g. `'webp'`, `'jpeg'`, `'png'` |
+| `quality` | `int?` | Compression quality `1–100` |
 
 ---
 
