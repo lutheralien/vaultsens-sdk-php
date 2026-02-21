@@ -1,6 +1,5 @@
 {
   "name": "vaultsens/sdk",
-  "version": "0.1.0",
   "description": "VaultSens SDK for API key uploads and file management",
   "type": "library",
   "license": "MIT",
