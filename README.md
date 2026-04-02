@@ -19,7 +19,7 @@ $client = new VaultSensClient(
     'your-api-secret'
 );
 
-$result = $client->uploadFile('./photo.png', 'hero', 'low');
+$result = $client->uploadFile('./photo.png', 'hero', 'low', null, 'photo.png', 'image/png');
 echo $result['data']['_id'];  // file ID
 echo $result['data']['url'];  // public URL
 ```
@@ -42,7 +42,7 @@ Use `setAuth($apiKey, $apiSecret)` to set credentials after construction.
 
 ### Files
 
-#### `uploadFile($filePath, $name = null, $compression = null, $folderId = null)`
+#### `uploadFile($filePath, $name = null, $compression = null, $folderId = null, $filename = null, $mimeType = null)`
 
 Upload a single file.
 
@@ -51,7 +51,9 @@ $result = $client->uploadFile(
     './photo.png',
     'my-image',   // optional display name stored with the file
     'medium',     // optional compression level applied server-side
-    'folder-id'   // optional folder to place the file in
+    'folder-id',  // optional folder to place the file in
+    'photo.png',  // optional multipart filename sent to VaultSens
+    'image/png'   // optional explicit MIME type
 );
 ```
 
@@ -63,8 +65,10 @@ $result = $client->uploadFile(
 | `$name` | `string\|null` | Display name stored with the file |
 | `$compression` | `string\|null` | Server-side compression: `'none'` \| `'low'` \| `'medium'` \| `'high'`. Must be allowed by your plan |
 | `$folderId` | `string\|null` | ID of the folder to place the file in. Omit for root |
+| `$filename` | `string\|null` | Multipart filename to send. Defaults to `basename($filePath)` |
+| `$mimeType` | `string\|null` | Explicit MIME type. If omitted, the SDK detects from the file or falls back to the filename extension |
 
-#### `uploadFiles(array $filePaths, $name = null, $compression = null, $folderId = null)`
+#### `uploadFiles(array $filePaths, $name = null, $compression = null, $folderId = null, $filenames = null, $mimeTypes = null)`
 
 Upload multiple files in one request. Accepts the same parameters as `uploadFile`.
 
@@ -73,7 +77,9 @@ $result = $client->uploadFiles(
     ['./a.png', './b.jpg'],
     null,
     'low',
-    'folder-id'
+    'folder-id',
+    ['a.png', 'b.jpg'],
+    ['image/png', 'image/jpeg']
 );
 ```
 
@@ -93,12 +99,12 @@ $atRoot  = $client->listFiles('root');
 $meta = $client->getFileMetadata('file-id');
 ```
 
-#### `updateFile($fileId, $filePath, $name = null, $compression = null)`
+#### `updateFile($fileId, $filePath, $name = null, $compression = null, $filename = null, $mimeType = null)`
 
 Replace a file's content. Accepts `$name` and `$compression` — `$folderId` is not supported (file stays in its current folder).
 
 ```php
-$client->updateFile('file-id', './new-photo.png', null, 'high');
+$client->updateFile('file-id', './new-photo.png', null, 'high', 'new-photo.png', 'image/png');
 ```
 
 #### `deleteFile($fileId)`

@@ -56,6 +56,25 @@ class VaultSensError extends \Exception
 
 class VaultSensClient
 {
+    private const EXTENSION_MIME_TYPES = [
+        'csv' => 'text/csv',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'json' => 'application/json',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'pdf' => 'application/pdf',
+        'png' => 'image/png',
+        'ppt' => 'application/vnd.ms-powerpoint',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'txt' => 'text/plain',
+        'webp' => 'image/webp',
+        'xls' => 'application/vnd.ms-excel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'xml' => 'application/xml',
+        'zip' => 'application/zip',
+    ];
+
     private string $baseUrl;
     private ?string $apiKey;
     private ?string $apiSecret;
@@ -106,13 +125,45 @@ class VaultSensClient
         }
     }
 
-    public function uploadFile(string $filePath, ?string $name = null, ?string $compression = null, ?string $folderId = null): array
+    private function resolveUploadFilename(string $filePath, ?string $filename = null): string
     {
+        return $filename ?: basename($filePath);
+    }
+
+    private function resolveUploadMimeType(string $filePath, ?string $filename = null, ?string $mimeType = null): string
+    {
+        if ($mimeType) {
+            return $mimeType;
+        }
+
+        if (function_exists('mime_content_type')) {
+            $detected = @mime_content_type($filePath);
+            if (is_string($detected) && $detected !== '') {
+                return $detected;
+            }
+        }
+
+        $extension = strtolower(pathinfo($filename ?: $filePath, PATHINFO_EXTENSION));
+        return self::EXTENSION_MIME_TYPES[$extension] ?? 'application/octet-stream';
+    }
+
+    public function uploadFile(
+        string $filePath,
+        ?string $name = null,
+        ?string $compression = null,
+        ?string $folderId = null,
+        ?string $filename = null,
+        ?string $mimeType = null
+    ): array
+    {
+        $resolvedFilename = $this->resolveUploadFilename($filePath, $filename);
+        $resolvedMimeType = $this->resolveUploadMimeType($filePath, $resolvedFilename, $mimeType);
         $multipart = [
             [
                 'name' => 'file',
                 'contents' => fopen($filePath, 'r'),
-                'filename' => basename($filePath),
+                'filename' => $resolvedFilename,
+                'headers' => ['Content-Type' => $resolvedMimeType],
             ],
         ];
 
@@ -129,14 +180,24 @@ class VaultSensClient
         return $this->request('POST', '/api/v1/files/upload', ['multipart' => $multipart]);
     }
 
-    public function uploadFiles(array $filePaths, ?string $name = null, ?string $compression = null, ?string $folderId = null): array
+    public function uploadFiles(
+        array $filePaths,
+        ?string $name = null,
+        ?string $compression = null,
+        ?string $folderId = null,
+        ?array $filenames = null,
+        ?array $mimeTypes = null
+    ): array
     {
         $multipart = [];
-        foreach ($filePaths as $path) {
+        foreach ($filePaths as $index => $path) {
+            $resolvedFilename = $this->resolveUploadFilename($path, $filenames[$index] ?? null);
+            $resolvedMimeType = $this->resolveUploadMimeType($path, $resolvedFilename, $mimeTypes[$index] ?? null);
             $multipart[] = [
                 'name' => 'files',
                 'contents' => fopen($path, 'r'),
-                'filename' => basename($path),
+                'filename' => $resolvedFilename,
+                'headers' => ['Content-Type' => $resolvedMimeType],
             ];
         }
 
@@ -188,13 +249,23 @@ class VaultSensClient
         return $this->request('GET', "/api/v1/files/metadata/{$fileId}");
     }
 
-    public function updateFile(string $fileId, string $filePath, ?string $name = null, ?string $compression = null): array
+    public function updateFile(
+        string $fileId,
+        string $filePath,
+        ?string $name = null,
+        ?string $compression = null,
+        ?string $filename = null,
+        ?string $mimeType = null
+    ): array
     {
+        $resolvedFilename = $this->resolveUploadFilename($filePath, $filename);
+        $resolvedMimeType = $this->resolveUploadMimeType($filePath, $resolvedFilename, $mimeType);
         $multipart = [
             [
                 'name' => 'file',
                 'contents' => fopen($filePath, 'r'),
-                'filename' => basename($filePath),
+                'filename' => $resolvedFilename,
+                'headers' => ['Content-Type' => $resolvedMimeType],
             ],
         ];
 
